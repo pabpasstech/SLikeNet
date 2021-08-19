@@ -61,12 +61,12 @@ enum FeatureList
 
 static unsigned short DEFAULT_RAKPEER_PORT=61111;
 
-#define NatTypeDetectionServerFramework_Supported QUERY
-#define NatPunchthroughServerFramework_Supported QUERY
-#define RelayPlugin_Supported QUERY
+#define NatTypeDetectionServerFramework_Supported SUPPORTED
+#define NatPunchthroughServerFramework_Supported SUPPORTED
+#define RelayPlugin_Supported UNSUPPORTED
 #define UDPProxyCoordinatorFramework_Supported UNSUPPORTED
 #define UDPProxyServerFramework_Supported UNSUPPORTED
-#define CloudServerFramework_Supported QUERY
+#define CloudServerFramework_Supported UNSUPPORTED
 
 struct SampleFramework
 {
@@ -488,60 +488,71 @@ struct CloudServerFramework : public SampleFramework
 };
 int main(int argc, char **argv)
 {
+// 	SLNet::RakPeerInterface *rakPeer= SLNet::RakPeerInterface::GetInstance();
+// 	SystemAddress ipList[ MAXIMUM_NUMBER_OF_INTERNAL_IDS ];
+// 	printf("IPs:\n");
+// 	unsigned int numLocalAddress = 0;
+// 	for (int i=0; i < MAXIMUM_NUMBER_OF_INTERNAL_IDS; i++) {
+// 		ipList[i]=rakPeer->GetLocalIP(i);
+// 		if (ipList[i]!=UNASSIGNED_SYSTEM_ADDRESS)
+// 			printf("%i. %s\n", i+1, ipList[i].ToString(false));
+// 		else
+// 			break;
+// 	}
+// 
+// 	if (numLocalAddress == 0) {
+// 		printf("Could not determine any local IP address.\n");
+// 		return 3;
+// 	}
+// 
+// 	// If RakPeer is started on 2 IP addresses, NATPunchthroughServer supports port stride detection, improving success rate
+// 	int sdLen=1;
+// 	SLNet::SocketDescriptor sd[2];
+// 	if (argc>1)
+// 	{
+// 		const int intPeerPort = atoi(argv[1]);
+// 		if ((intPeerPort < 0) || (intPeerPort > std::numeric_limits<unsigned short>::max())) {
+// 			printf("Specified peer port %d is outside valid bounds [0, %u]", intPeerPort, std::numeric_limits<unsigned short>::max());
+// 			return 2;
+// 		}
+// 		DEFAULT_RAKPEER_PORT = static_cast<unsigned short>(intPeerPort);
+// 	}
+// 
+// 	// set the first IP address
+// 	sd[0].port = DEFAULT_RAKPEER_PORT;
+// 	// #med - improve the logic here to simplify the handling...
+// 	if (argc > 2)
+// 		strcpy_s(sd[0].hostAddress, argv[2]);
+// 
+// 	// #high - improve determining the proper IP addresses
+// 	//         - filter between IPv4/IPv6 and only use either of these
+// 	//         - fallback to other IP addresses, if a given one failed to be bound
+// 	// allow enforcing single IP address mode by specifying second/third argument to the same IP address
+// 	if ((numLocalAddress >= 2 && argc <= 3) || (argc > 3)) {
+// 		const char *ipAddress1 = (argc > 2) ? argv[2] : ipList[0].ToString(false);
+// 		const char *ipAddress2 = (argc > 3) ? argv[3] : ipList[1].ToString(false);
+// 		strcpy_s(sd[0].hostAddress, ipAddress1);
+// 		sd[1].port = DEFAULT_RAKPEER_PORT+1;
+// 		strcpy_s(sd[1].hostAddress, ipAddress2);
+// 		printf("Dual IP address mode.\nFirst IP Address: '%s' (port: %u)\nSecond IP Address: '%s' (port: %u)\n", ipAddress1, sd[0].port, ipAddress2, sd[1].port);
+// 		sdLen = 2;
+// 	}
+// 	else {
+// 		printf("Single IP address mode.\nUsing port %i\n", sd[0].port);
+// 	}
+// 
+// 	const StartupResult success = rakPeer->Startup(8096, sd, sdLen);
+
 	SLNet::RakPeerInterface *rakPeer= SLNet::RakPeerInterface::GetInstance();
-	SystemAddress ipList[ MAXIMUM_NUMBER_OF_INTERNAL_IDS ];
-	printf("IPs:\n");
-	unsigned int i;
-	for (i=0; i < MAXIMUM_NUMBER_OF_INTERNAL_IDS; i++) {
-		ipList[i]=rakPeer->GetLocalIP(i);
-		if (ipList[i]!=UNASSIGNED_SYSTEM_ADDRESS)
-			printf("%i. %s\n", i+1, ipList[i].ToString(false));
-		else
-			break;
-	}
-
-	if (i == 0 && argc <= 3) {
-		printf("Could not determine any local IP address.\n");
-		return 3;
-	}
-
-	// If RakPeer is started on 2 IP addresses, NATPunchthroughServer supports port stride detection, improving success rate
-	int sdLen=1;
-	SLNet::SocketDescriptor sd[2];
-	if (argc>1)
+	SLNet::SocketDescriptor sd;
+	if (argc >= 3)
 	{
-		const int intPeerPort = atoi(argv[1]);
-		if ((intPeerPort < 0) || (intPeerPort > std::numeric_limits<unsigned short>::max())) {
-			printf("Specified peer port %d is outside valid bounds [0, %u]", intPeerPort, std::numeric_limits<unsigned short>::max());
-			return 2;
-		}
-		DEFAULT_RAKPEER_PORT = static_cast<unsigned short>(intPeerPort);
+		strcpy_s(sd.hostAddress, argv[1]);
+		const int intPeerPort = atoi(argv[2]);
+		sd.port = static_cast<unsigned short>(intPeerPort);
 	}
 
-	// set the first IP address
-	sd[0].port = DEFAULT_RAKPEER_PORT;
-	// #med - improve the logic here to simplify the handling...
-	if (argc > 2)
-		strcpy_s(sd[0].hostAddress, argv[2]);
-
-	// #high - improve determining the proper IP addresses
-	//         - filter between IPv4/IPv6 and only use either of these
-	//         - fallback to other IP addresses, if a given one failed to be bound
-	// allow enforcing single IP address mode by specifying second/third argument to the same IP address
-	if ((i >= 2 && argc <= 3) || (argc > 3)) {
-		const char *ipAddress1 = (argc > 2) ? argv[2] : ipList[0].ToString(false);
-		const char *ipAddress2 = (argc > 3) ? argv[3] : ipList[1].ToString(false);
-		strcpy_s(sd[0].hostAddress, ipAddress1);
-		sd[1].port = DEFAULT_RAKPEER_PORT+1;
-		strcpy_s(sd[1].hostAddress, ipAddress2);
-		printf("Dual IP address mode.\nFirst IP Address: '%s' (port: %u)\nSecond IP Address: '%s' (port: %u)\n", ipAddress1, sd[0].port, ipAddress2, sd[1].port);
-		sdLen = 2;
-	}
-	else {
-		printf("Single IP address mode.\nUsing port %i\n", sd[0].port);
-	}
-
-	const StartupResult success = rakPeer->Startup(8096, sd, sdLen);
+	const StartupResult success = rakPeer->Startup(8096, &sd, 1);
 	if (success != SLNet::RAKNET_STARTED)
 	{
 		printf("Failed to start rakPeer! Quitting - error code: %d\n", success);
@@ -554,7 +565,7 @@ int main(int argc, char **argv)
 	rakPeer->SetMaximumIncomingConnections(8096);
 
 	SampleFramework *samples[FEATURE_LIST_COUNT];
-	i=0;
+	int i=0;
 	samples[i++] = new NatTypeDetectionServerFramework;
 	samples[i++] = new NatPunchthroughServerFramework;
 	samples[i++] = new RelayPluginFramework;
